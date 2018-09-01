@@ -1,0 +1,104 @@
+---
+title: "PCA for car data set"
+author: 'Gary Yutong Bao '
+date: "5/9/2017"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: FM5002
+---
+(This project uses ggplot and ggfortify libraries for graphing and principal component analysis.)
+```{r setup, include=FALSE}
+library(ggplot2)
+library(ggfortify)
+
+```
+
+##Part I. Abstraction
+The project uses a small data set about car model ford mustang collected from different car sales website.
+Multiple variables are represented in the data, the goal is to identify the principal components to reduce the dimensionality of this data set. 
+Due to the limitation caused by small sampling size and  sampling method, let's assume that each row of data in the table represents a sales transaction for the largest Ford mustang dealer in the twin cities in last year. And this projects aims to solve the one single most important probelm: **what drives up the car sales?**
+
+Let's load the data set and take a look at the basic structures of the data set first.
+```{r load data sets}
+mustang = read.csv('Mustang.csv')
+str(mustang)
+summary(mustang)
+
+```
+It shows that there are 200 rows of cars and 4 columns of variables 
+
+##Part II. Create a simple visualization of the dataset
+```{r plot data}
+qplot(data = mustang, x = mustang$price, binwidth = 500, color = I('black'), fill = I('pink'))+
+  scale_x_continuous(breaks = seq(1,25000,2000))+
+    facet_wrap(~location)
+qplot(data = mustang, x = mustang$mileage, binwidth = 5000, color = I('black'), fill = I('green'))+
+  scale_x_continuous(breaks = seq(1,170000,10000))+
+    facet_wrap(~location)
+
+qplot(data = mustang, x =mustang$price, y=mustang$mileage, color = I('blue'), main = 'Price VS. Mileage')
+qplot(data = mustang, x =mustang$price, y=mustang$year, color = I('orange'), main = 'Price VS.Year')
+qplot(data = mustang, x =mustang$price, geom = 'freqpoly', color = location, main = 'Frequent Ploygon of prices in different locations')
+```
+Frome the graphs above, it's not hard to observe there are significant collinearty among some of the variables, and 'location' as a factor variable does not provide much information about the varitions in the data. Continue with PCA to reduce variables. 
+
+##Part III. Graph PCA visulization
+```{r PCA graph}
+#scale to only numeric data
+mustangNumeric <- mustang[c(1, 2, 3)]
+
+#graph PCA results and colorize by locations
+autoplot(prcomp(mustangNumeric), data = mustang,  colour = 'location', main = 'PCA graph with colorized by location')
+
+#plot first two components with significant eigenvectors 
+autoplot(prcomp(mustangNumeric), data = mustang,  label.size = 3, loadings = TRUE,loadings.label = TRUE, main = 'PCA graph with loadings')
+
+
+```
+
+
+
+As the assumption in Part II., beacuse location variable does not explain the varitions in the data set, we do not observe any clustering in 'PCA graph with colorized by location'.
+
+In 'PCA graph with loadings', we see a very nice spreading of the data around pc1 and pc2 axies, in particular, pc1 counts for much more variances than pc1. 
+
+The eigenvectors also show mileage being a stronger predictor than price. 
+
+
+## Gather PCA info to further inteprete the PCA graph
+```{r conduct pca}
+#compute PCA
+pca<-princomp(mustangNumeric)
+summary(pca)
+
+#find the loadings of each pincipal components
+pca$loadings
+
+```
+The summary shows that component 1 accounts for more than 80% of the variation, this corresponds to the finding from 'PCA graph with loadings' so we will just take component 1 and ignore component 2 and 3. 
+
+The loading shows the linear composition of component 1 and component 2
+
+component1 = -0.105 * price + 0.994 * mileage, 
+
+meanning mileage has a very significant positive impact on component1 and price has a very small negative impact on component 1. 
+
+component2 = 0.994 * price + 0.105 * mileage, 
+
+mearning mileage has a small positive impact on componnet 2 and price has a big positive impact on it. 
+
+## Plot the components with a different scale to see what happens
+```{r plot components}
+ biplot(pca, scale = 0.5)
+```
+
+A different scale shows it is more obvious that pc1 accounts for much more varition than pc2. And mileage has stronger predictive power.
+
+##Conclusion:
+1. This project shows component1, which is strongly impacted by mileage accounts for the most varition    in the dataset. This tells us that mileage is the strongest predictor when it comes to customer car    purchasing. 
+
+2. Weakness of the analysis and some improvements. 
+    The data comes from a smaller random sample        originally collected to build simple linear        regerssion for car price. So the limitations are obvious and the ituition to conduct PCA on this      dataset is not very obvious. To improve the result of PCA, one can use the pseudo facebook user       data which contains much more rows and columns to analyze more intresting topics. 
+
+
